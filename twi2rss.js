@@ -43,7 +43,7 @@ var make_feed = function(data) {
 	for (var i = 0, item; item = data[i]; i++) {
 		var date = new Date(item.time * 1000);
 		feed+='<item>';
-		feed+='<title><![CDATA['+item.user+': '+((item.is_rt)?'RT!':'')+' '+item.text+']]></title>';
+		feed+='<title><![CDATA['+item.user+': '+((item.is_rt)?'RT '+item.author+': ':'')+item.text+']]></title>';
 		feed+='<link><![CDATA[https://twitter.com/_/status/'+item.fb+']]></link>';
 		feed+='<description><![CDATA['+item.html+']]></description>';
 		feed+='<pubDate>'+date.toGMTString()+'</pubDate>';
