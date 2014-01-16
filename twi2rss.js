@@ -1,5 +1,7 @@
-var $ = require('jQuery')
-$.get('https://twitter.com/i/profiles/show/bigpodcast/timeline',
+#!/usr/local/bin/node
+var username = process.argv[2];
+var $ = require('jQuery');
+$.get('https://twitter.com/i/profiles/show/'+username+'/timeline',
 	function(data) {
 		if (!data || !data.items_html) {
 			return;
@@ -25,7 +27,7 @@ var read_data = function(data) {
 		tw.push(tw_item);
 	});
 	make_feed(tw);
-}
+};
 var make_feed = function(data) {
 	if (data.length === 0) {
 		return;
@@ -45,4 +47,4 @@ var make_feed = function(data) {
 	}
 	feed+='</channel>'+'</rss>';
 	console.log(feed);
-}
+};
