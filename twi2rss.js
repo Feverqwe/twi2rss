@@ -2,7 +2,7 @@
 
 var username = process.argv[2];
 var $ = require('jQuery');
-var feed = '';
+var feed = '<?xml version="1.0" ?><rss version="2.0"><channel><title>Twitter by ' + username + '</title>';
 var page_limit = 10;
 var now_time = parseInt((new Date()).getTime() / 1000);
 var get_page = function(max_id) {
@@ -11,14 +11,14 @@ var get_page = function(max_id) {
 			read_data(data);
 		}
 	);
-}
+};
 get_page();
 var read_data = function(data) {
+	var tw = [];
 	if (!data || !data.items_html) {
-		make_feed([]);
+		make_feed(tw);
 		return;
 	}
-	var tw = [];
 	var arr = $(data.items_html); //$($.parseHTML(data.items_html));
 	$.each(arr, function(k, item) {
 		var tw_item = {};
@@ -41,14 +41,8 @@ var read_data = function(data) {
 };
 var make_feed = function(data) {
 	if (data.length === 0) {
-		if (feed.length > 0) {
-			write_feed();
-		}
+		write_feed();
 		return;
-	}
-	if (feed.length === 0) {
-		feed = '<?xml version="1.0" ?><rss version="2.0">' + '<channel>' +
-			'<title>Twitter by ' + data[0].user + '</title>';
 	}
 	var last_time = now_time;
 	var last_id = 0;
@@ -57,12 +51,12 @@ var make_feed = function(data) {
 			last_time = item.time;
 			last_id = parseInt(item.fb);
 		}
-		if (item.is_rp) {
+		if (item.is_rp || !item.text) {
 			continue;
 		}
 		var date = new Date(item.time * 1000);
 		feed += '<item>';
-		feed += '<title><![CDATA[' + item.user + ': ' + ((item.is_rt) ? 'RT ' + item.author + ': ' : '') + item.text + ']]></title>';
+		feed += '<title><![CDATA[' + item.user + ': ' + ((item.is_rt) ? 'RT ' + item.author + ': ' : '') + item.text.replace(/\r?\n/g,' ') + ']]></title>';
 		feed += '<link><![CDATA[https://twitter.com/_/status/' + item.fb + ']]></link>';
 		feed += '<description><![CDATA[' + item.html + ']]></description>';
 		feed += '<pubDate>' + date.toGMTString() + '</pubDate>';
@@ -80,4 +74,4 @@ var make_feed = function(data) {
 var write_feed = function() {
 	feed += '</channel>' + '</rss>';
 	console.log(feed);
-}
+};
