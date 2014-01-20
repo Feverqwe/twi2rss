@@ -13,6 +13,22 @@ var get_page = function(max_id) {
 	);
 };
 get_page();
+var text_parse = function (text, html) {
+    var content = html;
+    var youtube = text.replace(/.*youtu.*v=([^&]*).*/, '$1');
+    if (youtube !== text) {
+        content += '<br/><iframe width="560" height="315" src="//www.youtube.com/embed/'+youtube+'" frameborder="0" allowfullscreen></iframe>';
+    }
+    var pic_twitter = text.replace(/.*pic\.twitter\.com\/([^ ]*).*/,'$1');
+    if (pic_twitter !== text) {
+        content += '<br/><iframe width="560" height="315" src="//pic.twitter.com/'+pic_twitter+'" frameborder="0"></iframe>';
+    }
+    var instagram = text.replace(/.*instagram\.com\/p\/([^/ ]*).*/,'$1');
+    if (instagram !== text) {
+        content += '<br/><iframe src="//instagram.com/p/'+instagram+'/embed/" width="612" height="710" frameborder="0" scrolling="no" allowtransparency="true"></iframe>'
+    }
+    return content;
+};
 var read_data = function(data) {
 	var tw = [];
 	if (!data || !data.items_html) {
@@ -35,6 +51,7 @@ var read_data = function(data) {
 		tw_item.author = tweet.data('screen-name');
 		tw_item.id = tweet.data('tweet-id') || tweet.data('item-id');
 		tw_item.fb = tweet.data('feedback-key').replace(/.*_(.*)$/, '$1');
+		tw_item.html = text_parse(tw_item.text, tw_item.html);
 		tw.push(tw_item);
 	});
 	make_feed(tw);
@@ -56,7 +73,7 @@ var make_feed = function(data) {
 		}
 		var date = new Date(item.time * 1000);
 		feed += '<item>';
-		feed += '<title><![CDATA[' + item.user + ': ' + ((item.is_rt) ? 'RT ' + item.author + ': ' : '') + item.text.replace(/\r?\n/g,' ') + ']]></title>';
+		feed += '<title><![CDATA[' + item.user + ': ' + ((item.is_rt) ? 'RT ' : '') + item.text.replace(/\r?\n/g,' ') + ']]></title>';
 		feed += '<link><![CDATA[https://twitter.com/_/status/' + item.fb + ']]></link>';
 		feed += '<description><![CDATA[' + item.html + ']]></description>';
 		feed += '<pubDate>' + date.toGMTString() + '</pubDate>';
