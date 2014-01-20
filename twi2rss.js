@@ -19,10 +19,6 @@ var text_parse = function (text, html) {
     if (youtube !== text) {
         content += '<br/><iframe width="560" height="315" src="//www.youtube.com/embed/'+youtube+'" frameborder="0" allowfullscreen></iframe>';
     }
-    var pic_twitter = text.replace(/.*pic\.twitter\.com\/([^ ]*).*/,'$1');
-    if (pic_twitter !== text) {
-        content += '<br/><iframe width="560" height="315" src="//pic.twitter.com/'+pic_twitter+'" frameborder="0"></iframe>';
-    }
     var instagram = text.replace(/.*instagram\.com\/p\/([^/ ]*).*/,'$1');
     if (instagram !== text) {
         content += '<br/><iframe src="//instagram.com/p/'+instagram+'/embed/" width="612" height="710" frameborder="0" scrolling="no" allowtransparency="true"></iframe>'
@@ -51,6 +47,10 @@ var read_data = function(data) {
 		tw_item.author = tweet.data('screen-name');
 		tw_item.id = tweet.data('tweet-id') || tweet.data('item-id');
 		tw_item.fb = tweet.data('feedback-key').replace(/.*_(.*)$/, '$1');
+        var pic = tweet.find('a.is-preview > div.is-preview > div');
+        if (pic.length > 0) {
+            tw_item.html += '<br/><img src="'+pic.data('img-src')+'" width="100%" style="'+pic.attr('style')+'"/>';
+        }
 		tw_item.html = text_parse(tw_item.text, tw_item.html);
 		tw.push(tw_item);
 	});
