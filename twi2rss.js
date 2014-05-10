@@ -70,7 +70,7 @@ var read_data = function(data) {
 			tw_item.fb = tweet.data('feedback-key').replace(/.*_(.*)$/, '$1');
 			var pic = tweet.find('a.TwitterPhoto-link > img');
 			if (pic.length > 0) {
-				tw_item.html += '<br/><img src="'+pic.attr('src')+'" width="100%" style="'+pic.attr('style')+'"/>';
+				tw_item.html += '<br/><img src="'+pic.attr('src')+'" width="100%"/>';
 			}
 		}
 		tw_item.html = text_parse(tw_item.text, tw_item.html);
