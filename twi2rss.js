@@ -1,116 +1,102 @@
 #!/usr/local/bin/node
+(function() {
+  var username = process.argv[2];
+  var $ = require('jQuery');
 
-var username = process.argv[2];
-var $ = require('jQuery');
-var feed = '<?xml version="1.0" ?><rss version="2.0"><channel><title>Twitter by ' + username + '</title>';
-var page_limit = 10;
-var now_time = parseInt((new Date()).getTime() / 1000);
-var get_page = function(max_id) {
-	$.get('https://twitter.com/i/profiles/show/' + username + '/timeline' + ((max_id !== undefined) ? '?max_id=' + max_id : ''),
-		function(data) {
-			read_data(data);
-		}
-	);
-};
-get_page();
-var text_parse = function (text, html) {
-	var content = html;
-	var youtube = text.replace(/.*youtu.*v=([^&]*).*/, '$1');
-	if (youtube !== text) {
-		content += '<br/><iframe width="560" height="315" src="//www.youtube.com/embed/'+youtube+'" frameborder="0" allowfullscreen></iframe>';
-	}
-	var instagram = text.replace(/.*instagram\.com\/p\/([^/ ]*).*/,'$1');
-	if (instagram !== text) {
-		content += '<br/><iframe src="//instagram.com/p/'+instagram+'/embed/" width="612" height="710" frameborder="0" scrolling="no" allowtransparency="true"></iframe>'
-	}
-	return content;
-};
-var read_data = function(data) {
-	var tw = [];
-	if (!data || !data.items_html) {
-		make_feed(tw);
-		return;
-	}
-	var arr = $(data.items_html); //$($.parseHTML(data.items_html));
-	$.each(arr, function(k, item) {
-		var tw_item = {};
-		var $item = $(item);
-		var tweet = $item.find('.tweet').eq(0);
-		var type = 0;
-		if (tweet.length === 0) {
-			tweet = $item.find('.js-tweet').eq(0);
-			type = 1;
-		}
-		if (tweet.length === 0) {
-			return 1;
-		}
-		if (type === 0) {
-			tw_item.time = $item.find('._timestamp').data('time');
-			tw_item.is_rp = (tweet.data('is-reply-to')) ? true : false;
-			tw_item.is_rt = (tweet.data('retweeter')) ? true : false;
-			tw_item.html = $item.find('.tweet-text').html();
-			tw_item.text = $item.find('.tweet-text').text();
-			tw_item.user = (tw_item.is_rt) ? tweet.data('retweeter') : tweet.data('screen-name');
-			tw_item.author = tweet.data('screen-name');
-			tw_item.id = tweet.data('tweet-id') || tweet.data('item-id');
-			tw_item.fb = tweet.data('feedback-key').replace(/.*_(.*)$/, '$1');
-			var pic = tweet.find('a.is-preview > div.is-preview > div');
-			if (pic.length > 0) {
-				tw_item.html += '<br/><img src="'+pic.data('img-src')+'" width="100%" style="'+pic.attr('style')+'"/>';
-			}
-		} else {
-			tw_item.time = $item.find('.js-short-timestamp').data('time');
-			tw_item.is_rp = (tweet.data('is-reply-to')) ? true : false;
-			tw_item.is_rt = (tweet.data('retweeter')) ? true : false;
-			tw_item.html = $item.find('.js-tweet-text').html();
-			tw_item.text = $item.find('.js-tweet-text').text();
-			tw_item.user = (tw_item.is_rt) ? tweet.data('retweeter') : tweet.data('screen-name');
-			tw_item.author = tweet.data('screen-name');
-			tw_item.id = tweet.data('tweet-id') || tweet.data('item-id');
-			tw_item.fb = tweet.data('feedback-key').replace(/.*_(.*)$/, '$1');
-			var pic = tweet.find('a.TwitterPhoto-link > img');
-			if (pic.length > 0) {
-				tw_item.html += '<br/><img src="'+pic.attr('src')+'" width="100%"/>';
-			}
-		}
-		tw_item.html = text_parse(tw_item.text, tw_item.html);
-		tw.push(tw_item);
-	});
-	make_feed(tw);
-};
-var make_feed = function(data) {
-	if (data.length === 0) {
-		write_feed();
-		return;
-	}
-	var last_time = now_time;
-	var last_id = 0;
-	for (var i = 0, item; item = data[i]; i++) {
-		if (last_time > item.time) {
-			last_time = item.time;
-			last_id = parseInt(item.fb);
-		}
-		if (item.is_rp || !item.text) {
-			continue;
-		}
-		var date = new Date(item.time * 1000);
-		feed += '<item>';
-		feed += '<title><![CDATA[' + item.user + ': ' + ((item.is_rt) ? 'RT ' : '') + item.text.replace(/\r?\n/g,' ') + ']]></title>';
-		feed += '<link><![CDATA[https://twitter.com/_/status/' + item.fb + ']]></link>';
-		feed += '<description><![CDATA[' + item.html + ']]></description>';
-		feed += '<pubDate>' + date.toGMTString() + '</pubDate>';
-		feed += '<guid>' + item.id + '</guid>';
-		feed += '<author>' + item.author + '</author>';
-		feed += '</item>';
-	}
-	page_limit--;
-	if (now_time - 12 * 60 * 60 < last_time && last_id > 0 && page_limit > 0) {
-		get_page(last_id - 1);
-	} else {
-		write_feed();
-	}
-};
-var write_feed = function() {
-	feed += '</channel>' + '</rss>';
-	console.log(feed);
-};
+  var pageLimit = 10;
+  var twiList = [];
+
+  var textParse = function (text, html) {
+    var content = html;
+    var youtube = text.match(/youtu.*v=([^& ]*)/);
+    if (youtube) {
+      content += '<br/><iframe width="560" height="315" src="{url}" frameborder="0" allowfullscreen></iframe>'.replace('{url}', 'https://www.youtube.com/embed/'+youtube[1]);
+    }
+    var instagram = text.match(/instagram\.com\/p\/([^/ ]*)/);
+    if (instagram) {
+      content += '<br/><iframe src="{url}" width="612" height="710" frameborder="0" scrolling="no" allowtransparency="true"></iframe>'.replace('{url}', 'https://instagram.com/p/'+instagram[1]+'/embed/')
+    }
+    return content;
+  };
+
+  var readData = function(data) {
+    var twiList = [];
+    var html = $(data);
+    var items = html.children('div.Grid-cell');
+    for (var i = 0, item; item = items[i]; i++) {
+      var twi = {};
+      var tweet = item.querySelector('.js-tweet');
+
+      twi.time = item.querySelector('.js-short-timestamp');
+      twi.html = item.querySelector('.js-tweet-text');
+      twi.link = twi.time.parentNode;
+      if (!twi.time || !twi.html || !twi.link || !tweet) {
+        continue;
+      }
+      twi.time = parseInt(twi.time.getAttribute('data-time'));
+      twi.isReply = tweet.getAttribute('data-is-reply-to') === 'true';
+      twi.isRT = tweet.getAttribute('data-retweeter');
+      twi.text = twi.html.textContent;
+      twi.html = twi.html.innerHTML;
+      twi.author = tweet.getAttribute('data-screen-name');
+      twi.user = twi.isRT || twi.author;
+      twi.id = tweet.getAttribute('data-tweet-id') || tweet.getAttribute('data-item-id');
+      twi.link = 'https://twitter.com' + twi.link.getAttribute('href');
+
+      var pic = tweet.querySelector('a.TwitterPhoto-link > img');
+      if (pic) {
+        twi.html += '<br/><img src="{url}" width="100%"/>'.replace('{url}', pic.getAttribute('src'));
+      }
+      twi.html = textParse(twi.text, twi.html);
+      twiList.push(twi);
+    }
+    return twiList;
+  };
+
+  var get_page = function(maxId, cb) {
+    $.get('https://twitter.com/i/profiles/show/{username}/timeline'.replace('{username}', username) + (maxId ? '?max_id=' + maxId : ''), function(data) {
+      if (!data || !data.items_html) {
+        return cb();
+      }
+      cb(readData(data.items_html));
+    });
+  };
+
+  get_page(null, function onGotList(list) {
+    list = list || [];
+    var nowTime = undefined;
+    var lastTime = nowTime = parseInt(Date.now() / 1000);
+    var lastId = 0;
+    for (var i = 0, twi; twi = list[i]; i++) {
+      if (twi.time < lastTime) {
+        lastTime = twi.time;
+        lastId = twi.id;
+      }
+      twiList.push(twi);
+    }
+    pageLimit--;
+    if (nowTime - 12 * 60 * 60 < lastTime && lastId > 0 && pageLimit > 0) {
+      return get_page(lastId, onGotList);
+    }
+
+    makeFeed(twiList);
+  });
+
+  var makeFeed = function(twiList) {
+    var body = ['<?xml version="1.0" ?><rss version="2.0"><channel>'];
+    body.push('<title>{title}</title>'.replace('{title}', 'Twitter by ' + username));
+    for (var i = 0, twi; twi = twiList[i]; i++) {
+      body.push('<item>');
+      body.push('<title><![CDATA[' + twi.user + ': ' + ((twi.isRT) ? 'RT ' : '') + twi.text.replace(/\r?\n/g,' ') + ']]></title>');
+      body.push('<link><![CDATA[' + twi.link + ']]></link>');
+      body.push('<description><![CDATA[' + twi.html + ']]></description>');
+      body.push('<pubDate>' + new Date(twi.time * 1000).toGMTString() + '</pubDate>');
+      body.push('<guid>' + twi.id + '</guid>');
+      body.push('<author>' + twi.author + '</author>');
+      body.push('</item>');
+    }
+    body.push('</channel></rss>');
+
+    console.log(body.join(''));
+  };
+})();
