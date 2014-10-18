@@ -8,6 +8,7 @@
 
   var pageLimit = 10;
   var twiList = [];
+  var twiIdList = {};
 
   var textParse = function (text, html) {
     var content = html;
@@ -90,6 +91,10 @@
     var lastTime = nowTime = parseInt(Date.now() / 1000);
     var lastId = 0;
     for (var i = 0, twi; twi = list[i]; i++) {
+      if (twiIdList[twi.id] !== undefined) {
+        continue;
+      }
+      twiIdList[twi.id] = 1;
       if (twi.time < lastTime) {
         lastTime = twi.time;
         lastId = twi.id;
