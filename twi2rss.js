@@ -1,7 +1,10 @@
 #!/usr/bin/node
+/*
+ npm install jsdom xmlhttprequest
+ */
 (function() {
   var username = process.argv[2];
-  var $ = require('jQuery');
+  var XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
   var pageLimit = 10;
   var twiList = [];
@@ -21,9 +24,14 @@
 
   var readData = function(data) {
     var twiList = [];
-    var html = $(data);
-    var items = html.children('div.Grid-cell');
-    for (var i = 0, item; item = items[i]; i++) {
+
+    var html = require("jsdom").jsdom(data).body;
+
+    for (var i = 0, item; item = html.childNodes[i]; i++) {
+      if (item.nodeType !== 1 || item.getAttribute('class') !== 'Grid') {
+        continue;
+      }
+
       var twi = {};
       var tweet = item.querySelector('.js-tweet');
 
@@ -54,12 +62,23 @@
   };
 
   var get_page = function(maxId, cb) {
-    $.get('https://twitter.com/i/profiles/show/{username}/timeline'.replace('{username}', username) + (maxId ? '?max_id=' + maxId : ''), function(data) {
+    var url = 'https://twitter.com/i/profiles/show/{username}/timeline'.replace('{username}', username) + (maxId ? '?max_id=' + maxId : '');
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onload = function() {
+      var data;
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch (e) {}
       if (!data || !data.items_html) {
         return cb();
       }
       cb(readData(data.items_html));
-    });
+    };
+    xhr.onerror = function() {
+      cb();
+    };
+    xhr.send();
   };
 
   get_page(null, function onGotList(list) {
