@@ -2,7 +2,7 @@
 
 For node.js
 
-Require: jQuery, jsdom, xmlhttprequest
+Require: jsdom, xmlhttprequest
 
 Output: in stdout
 
