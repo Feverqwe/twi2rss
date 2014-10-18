@@ -1,4 +1,4 @@
-#!/usr/local/bin/node
+#!/usr/bin/node
 (function() {
   var username = process.argv[2];
   var $ = require('jQuery');
