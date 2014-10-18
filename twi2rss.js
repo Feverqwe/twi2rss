@@ -62,7 +62,10 @@
   };
 
   var get_page = function(maxId, cb) {
-    var url = 'https://twitter.com/i/profiles/show/{username}/timeline'.replace('{username}', username) + (maxId ? '?max_id=' + maxId : '');
+    var url = 'https://twitter.com/i/profiles/show/{username}/timeline'.replace('{username}', username);
+    if (maxId) {
+      url += '?max_id=' + maxId;
+    }
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.onload = function() {
