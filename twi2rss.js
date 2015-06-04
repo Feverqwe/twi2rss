@@ -12,11 +12,11 @@
 
   var textParse = function (text, html) {
     var content = html;
-    var youtube = text.match(/youtu.*v=([^& ]*)/);
+    var youtube = text.match(/youtu.+v=([\d\w_-]{11})/) || text.match(/youtu\.be\/([\d\w_-]{11})/);
     if (youtube) {
       content += '<br/><iframe width="560" height="315" src="{url}" frameborder="0" allowfullscreen></iframe>'.replace('{url}', 'https://www.youtube.com/embed/'+youtube[1]);
     }
-    var instagram = text.match(/instagram\.com\/p\/([^/ ]*)/);
+    var instagram = text.match(/instagram\.com\/p\/([^/ ]+)/);
     if (instagram) {
       content += '<br/><iframe src="{url}" width="612" height="710" frameborder="0" scrolling="no" allowtransparency="true"></iframe>'.replace('{url}', 'https://instagram.com/p/'+instagram[1]+'/embed/')
     }
@@ -29,12 +29,12 @@
     var html = require("jsdom").jsdom(data).body;
 
     for (var i = 0, item; item = html.childNodes[i]; i++) {
-      if (item.nodeType !== 1 || item.getAttribute('class') !== 'Grid') {
+      if (item.nodeType !== 1 || (item.getAttribute('class') || '').indexOf('stream-item') === -1) {
         continue;
       }
 
       var twi = {};
-      var tweet = item.querySelector('.js-tweet');
+      var tweet = item.querySelector('.tweet');
 
       twi.time = item.querySelector('.js-short-timestamp');
       twi.html = item.querySelector('.js-tweet-text');
@@ -52,9 +52,9 @@
       twi.id = tweet.getAttribute('data-tweet-id') || tweet.getAttribute('data-item-id');
       twi.link = 'https://twitter.com' + twi.link.getAttribute('href');
 
-      var pic = tweet.querySelector('a.TwitterPhoto-link > img');
+      var pic = tweet.querySelector('a.media-thumbnail.is-preview');
       if (pic) {
-        twi.html += '<br/><img src="{url}" width="100%"/>'.replace('{url}', pic.getAttribute('src'));
+        twi.html += '<br/><img src="{url}" width="100%"/>'.replace('{url}', pic.getAttribute('data-resolved-url-large') || pic.getAttribute('data-url'));
       }
       twi.html = textParse(twi.text, twi.html);
       twiList.push(twi);
