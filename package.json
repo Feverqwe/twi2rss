@@ -4,8 +4,8 @@
   "description": "Twitter to rss",
   "main": "twi2rss.js",
   "dependencies": {
-    "jsdom": "^3.1.2",
-    "xmlhttprequest": "^1.6.0"
+    "jsdom": "^6.5.1",
+    "xmlhttprequest": "^1.7.0"
   },
   "devDependencies": {},
   "scripts": {
