@@ -10,7 +10,7 @@
   var twiList = [];
   var twiIdList = {};
 
-  var textParse = function (text, html) {
+  var textParse = function (text, html, tweet) {
     var content = html;
     var youtube = text.match(/youtu.+v=([\d\w_-]{11})/) || text.match(/youtu\.be\/([\d\w_-]{11})/);
     if (youtube) {
@@ -18,7 +18,13 @@
     }
     var instagram = text.match(/instagram\.com\/p\/([^/ ]+)/);
     if (instagram) {
-      content += '<br/><iframe src="{url}" width="612" height="710" frameborder="0" scrolling="no" allowtransparency="true"></iframe>'.replace('{url}', 'https://instagram.com/p/'+instagram[1]+'/embed/')
+      content += '<br/><iframe src="{url}" width="612" height="710" frameborder="0" scrolling="no" allowtransparency="true"></iframe>'.replace('{url}', 'https://instagram.com/p/'+instagram[1]+'/embed/');
+    }
+    if (!instagram) {
+      var photo = tweet.querySelector('.js-old-photo[data-image-url]');
+      if (photo) {
+        content += '<br/><img src="{url}">'.replace('{url}', photo.getAttribute('data-image-url'));
+      }
     }
     return content;
   };
@@ -56,7 +62,7 @@
       if (pic) {
         twi.html += '<br/><img src="{url}" width="100%"/>'.replace('{url}', pic.getAttribute('data-resolved-url-large') || pic.getAttribute('data-url'));
       }
-      twi.html = textParse(twi.text, twi.html);
+      twi.html = textParse(twi.text, twi.html, tweet);
       twiList.push(twi);
     }
     return twiList;
