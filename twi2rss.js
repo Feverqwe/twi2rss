@@ -20,11 +20,9 @@
     if (instagram) {
       content += '<br/><iframe src="{url}" width="612" height="710" frameborder="0" scrolling="no" allowtransparency="true"></iframe>'.replace('{url}', 'https://instagram.com/p/'+instagram[1]+'/embed/');
     }
-    if (!instagram) {
-      var photoList = tweet.querySelectorAll('.js-old-photo[data-image-url]');
-      for (var i = 0, photo; photo = photoList[i]; i++) {
-        content += '<br/><img src="{url}">'.replace('{url}', photo.getAttribute('data-image-url'));
-      }
+    var photoList = tweet.querySelectorAll('.js-old-photo[data-image-url]');
+    for (var i = 0, photo; photo = photoList[i]; i++) {
+      content += '<br/><img src="{url}">'.replace('{url}', photo.getAttribute('data-image-url'));
     }
     return content;
   };
