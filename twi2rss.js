@@ -12,18 +12,28 @@
 
   var textParse = function (text, html, tweet) {
     var content = html;
+
     var youtube = text.match(/youtu.+v=([\d\w_-]{11})/) || text.match(/youtu\.be\/([\d\w_-]{11})/);
     if (youtube) {
       content += '<br/><iframe width="560" height="315" src="{url}" frameborder="0" allowfullscreen></iframe>'.replace('{url}', 'https://www.youtube.com/embed/'+youtube[1]);
     }
+
     var instagram = text.match(/instagram\.com\/p\/([^/ ]+)/);
     if (instagram) {
       content += '<br/><iframe src="{url}" width="612" height="710" frameborder="0" scrolling="no" allowtransparency="true"></iframe>'.replace('{url}', 'https://instagram.com/p/'+instagram[1]+'/embed/');
     }
-    var photoList = tweet.querySelectorAll('.js-old-photo[data-image-url]');
+
+    var dDblPhotoList = [];
+    var photoList = tweet.querySelectorAll('[data-image-url]');
     for (var i = 0, photo; photo = photoList[i]; i++) {
-      content += '<br/><img src="{url}">'.replace('{url}', photo.getAttribute('data-image-url'));
+      var url = photo.getAttribute('data-image-url');
+      if (dDblPhotoList.indexOf(url) !== -1) {
+        continue;
+      }
+      dDblPhotoList.push(url);
+      content += '<br/><img src="{url}">'.replace('{url}', url);
     }
+
     return content;
   };
 
@@ -42,8 +52,7 @@
 
       twi.time = item.querySelector('.js-short-timestamp');
       twi.html = item.querySelector('.js-tweet-text');
-      twi.link = twi.time.parentNode;
-      if (!twi.time || !twi.html || !twi.link || !tweet) {
+      if (!twi.time || !twi.html || !tweet) {
         continue;
       }
       twi.time = parseInt(twi.time.getAttribute('data-time'));
@@ -54,12 +63,7 @@
       twi.author = tweet.getAttribute('data-screen-name');
       twi.user = twi.isRT || twi.author;
       twi.id = tweet.getAttribute('data-tweet-id') || tweet.getAttribute('data-item-id');
-      twi.link = 'https://twitter.com' + twi.link.getAttribute('href');
-
-      var pic = tweet.querySelector('a.media-thumbnail.is-preview');
-      if (pic) {
-        twi.html += '<br/><img src="{url}" width="100%"/>'.replace('{url}', pic.getAttribute('data-resolved-url-large') || pic.getAttribute('data-url'));
-      }
+      twi.link = 'https://twitter.com' + tweet.getAttribute('data-permalink-path');
       twi.html = textParse(twi.text, twi.html, tweet);
       twiList.push(twi);
     }
@@ -69,7 +73,7 @@
   var get_page = function(maxId, cb) {
     var url = 'https://twitter.com/i/profiles/show/{username}/timeline'.replace('{username}', username);
     if (maxId) {
-      url += '?max_id=' + maxId;
+      url += '?max_position=' + maxId;
     }
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
