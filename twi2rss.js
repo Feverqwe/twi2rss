@@ -1,32 +1,34 @@
 #!/usr/bin/node
-/*
- npm install jsdom xmlhttprequest
- */
+
+const fs = require('fs-extra');
+const path = require('path');
+const got = require('got');
+const JSDOM = require("jsdom").JSDOM;
+
 (function() {
-  var username = process.argv[2];
-  var XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
+  const username = process.argv[2];
 
-  var pageLimit = 10;
-  var twiList = [];
-  var twiIdList = {};
+  let pageLimit = 10;
+  const twiList = [];
+  const twiIdList = {};
 
-  var textParse = function (text, html, tweet) {
-    var content = html;
+  const textParse = function (text, html, tweet) {
+    let content = html;
 
-    var youtube = text.match(/youtu.+v=([\d\w_-]{11})/) || text.match(/youtu\.be\/([\d\w_-]{11})/);
+    const youtube = text.match(/youtu.+v=([\d\w_-]{11})/) || text.match(/youtu\.be\/([\d\w_-]{11})/);
     if (youtube) {
       content += '<br/><iframe width="560" height="315" src="{url}" frameborder="0" allowfullscreen></iframe>'.replace('{url}', 'https://www.youtube.com/embed/'+youtube[1]);
     }
 
-    var instagram = text.match(/instagram\.com\/p\/([^/ ]+)/);
+    const instagram = text.match(/instagram\.com\/p\/([^/ ]+)/);
     if (instagram) {
       content += '<br/><iframe src="{url}" width="612" height="710" frameborder="0" scrolling="no" allowtransparency="true"></iframe>'.replace('{url}', 'https://instagram.com/p/'+instagram[1]+'/embed/');
     }
 
-    var dDblPhotoList = [];
-    var photoList = tweet.querySelectorAll('[data-image-url]');
-    for (var i = 0, photo; photo = photoList[i]; i++) {
-      var url = photo.getAttribute('data-image-url');
+    const dDblPhotoList = [];
+    const photoList = tweet.querySelectorAll('[data-image-url]');
+    for (let i = 0, photo; photo = photoList[i]; i++) {
+      const url = photo.getAttribute('data-image-url');
       if (dDblPhotoList.indexOf(url) !== -1) {
         continue;
       }
@@ -37,18 +39,20 @@
     return content;
   };
 
-  var readData = function(data) {
-    var twiList = [];
+  const readData = function(data, url) {
+    const twiList = [];
 
-    var html = require("jsdom").jsdom(data).body;
+    const fragment = JSDOM.fragment(data, {
+      url: url
+    });
 
-    for (var i = 0, item; item = html.childNodes[i]; i++) {
+    for (let i = 0, item; item = fragment.childNodes[i]; i++) {
       if (item.nodeType !== 1 || (item.getAttribute('class') || '').indexOf('stream-item') === -1) {
         continue;
       }
 
-      var twi = {};
-      var tweet = item.querySelector('.tweet');
+      const twi = {};
+      const tweet = item.querySelector('.tweet');
 
       twi.time = item.querySelector('.js-short-timestamp');
       twi.html = item.querySelector('.js-tweet-text');
@@ -70,35 +74,30 @@
     return twiList;
   };
 
-  var get_page = function(maxId, cb) {
-    var url = 'https://twitter.com/i/profiles/show/{username}/timeline'.replace('{username}', username);
+  const get_page = function(maxId, cb) {
+    let url = 'https://twitter.com/i/profiles/show/{username}/timeline'.replace('{username}', username);
     if (maxId) {
       url += '?max_position=' + maxId;
     }
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.onload = function() {
-      var data;
-      try {
-        data = JSON.parse(xhr.responseText);
-      } catch (e) {}
+    got(url, {
+      json: true
+    }).then(response => {
+      const data = response.body;
       if (!data || !data.items_html) {
         return cb();
       }
-      cb(readData(data.items_html));
-    };
-    xhr.onerror = function() {
+      cb(readData(data.items_html, response.url));
+    }, err => {
       cb();
-    };
-    xhr.send();
+    });
   };
 
   get_page(null, function onGotList(list) {
     list = list || [];
-    var nowTime = undefined;
-    var lastTime = nowTime = parseInt(Date.now() / 1000);
-    var lastId = 0;
-    for (var i = 0, twi; twi = list[i]; i++) {
+    let nowTime = undefined;
+    let lastTime = nowTime = parseInt(Date.now() / 1000);
+    let lastId = 0;
+    for (let i = 0, twi; twi = list[i]; i++) {
       if (twiIdList[twi.id] !== undefined) {
         continue;
       }
@@ -117,10 +116,10 @@
     makeFeed(twiList);
   });
 
-  var makeFeed = function(twiList) {
-    var body = ['<?xml version="1.0" ?><rss version="2.0"><channel>'];
+  const makeFeed = function(twiList) {
+    const body = ['<?xml version="1.0" ?><rss version="2.0"><channel>'];
     body.push('<title>{title}</title>'.replace('{title}', 'Twitter by ' + username));
-    for (var i = 0, twi; twi = twiList[i]; i++) {
+    for (let i = 0, twi; twi = twiList[i]; i++) {
       body.push('<item>');
       body.push('<title><![CDATA[' + twi.user + ': ' + ((twi.isRT) ? 'RT ' : '') + twi.text.replace(/\r?\n/g,' ') + ']]></title>');
       body.push('<link><![CDATA[' + twi.link + ']]></link>');
@@ -132,6 +131,6 @@
     }
     body.push('</channel></rss>');
 
-    console.log(body.join(''));
+    fs.writeFile(path.join(__dirname, `${username}.xml`), body.join(''));
   };
 })();
