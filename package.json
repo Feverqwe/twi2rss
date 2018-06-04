@@ -4,7 +4,7 @@
   "description": "Twitter to rss",
   "main": "twi2rss.js",
   "scripts": {
-    "start": "node twi2rss"
+    "start": "node twi2rss twitter ./rss"
   },
   "dependencies": {
     "fs-extra": "^6.0.1",

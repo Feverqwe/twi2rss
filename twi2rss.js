@@ -7,6 +7,7 @@ const JSDOM = require("jsdom").JSDOM;
 
 (function() {
   const username = process.argv[2];
+  const output = path.resolve(process.argv[3]);
 
   let pageLimit = 10;
   const twiList = [];
@@ -131,6 +132,8 @@ const JSDOM = require("jsdom").JSDOM;
     }
     body.push('</channel></rss>');
 
-    fs.writeFile(path.join(__dirname, `${username}.xml`), body.join(''));
+    fs.ensureDir(output).then(() => {
+      return fs.writeFile(path.join(output, `${username}.rss`), body.join(''));
+    });
   };
 })();
